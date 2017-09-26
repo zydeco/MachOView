@@ -18,7 +18,7 @@
 @synthesize name, length, layout;
 
 //-----------------------------------------------------------------------------
--(id)initWithName:(NSString *)_name Length:(uint32_t)_length
+-(instancetype)initWithName:(NSString *)_name Length:(uint32_t)_length
 {
   if (self = [super init])
   {
@@ -39,7 +39,7 @@
 //============================================================================
 @implementation ArchiveLayout
 
-- (id)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node
+- (instancetype)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node
 {
   if (self = [super initWithDataController:dc rootNode:node])
   {
@@ -93,7 +93,7 @@
                          :name];
   
   NSString * time_str = [dataController read_string:range fixlen:12 lastReadHex:&lastReadHex];
-  time_t time = (time_t)[time_str longLongValue];
+  time_t time = (time_t)time_str.longLongValue;
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
                          :@"Time Stamp"
@@ -103,25 +103,25 @@
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
                          :@"UserID"
-                         :[NSString stringWithFormat:@"%u",[user_id_str intValue]]];
+                         :[NSString stringWithFormat:@"%u",user_id_str.intValue]];
 
   NSString * group_id_str = [dataController read_string:range fixlen:6 lastReadHex:&lastReadHex];
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
                          :@"GroupID"
-                         :[NSString stringWithFormat:@"%u",[group_id_str intValue]]];
+                         :[NSString stringWithFormat:@"%u",group_id_str.intValue]];
 
   NSString * mode_str = [dataController read_string:range fixlen:8 lastReadHex:&lastReadHex];
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
                          :@"Mode"
-                         :[NSString stringWithFormat:@"%u",[mode_str intValue]]];
+                         :[NSString stringWithFormat:@"%u",mode_str.intValue]];
 
   NSString * size_str = [dataController read_string:range fixlen:8 lastReadHex:&lastReadHex];
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
                          :@"Size"
-                         :[NSString stringWithFormat:@"%u",[size_str intValue]]];
+                         :[NSString stringWithFormat:@"%u",size_str.intValue]];
   
   // read spaces until end-of-header (0x60 0x0A)
   NSMutableString * mutableLastReadHex = [[NSMutableString alloc] initWithCapacity:2];
@@ -130,14 +130,14 @@
   {
     [padding appendString:[dataController read_string:range fixlen:1 lastReadHex:&lastReadHex]];
     [mutableLastReadHex appendString:lastReadHex];
-    if (*(CSTRING(padding) + [padding length] - 1) != ' ')
+    if (*(CSTRING(padding) + padding.length - 1) != ' ')
     {
       [padding appendString:[dataController read_string:range fixlen:1 lastReadHex:&lastReadHex]];
       [mutableLastReadHex appendString:lastReadHex];
       break;
     }
   }
-  [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location - [padding length] + 2]
+  [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location - padding.length + 2]
                          :mutableLastReadHex
                          :@"End Header"
                          :padding];
@@ -145,20 +145,20 @@
   MVObjectInfo * objectInfo;
   if (NSEqualRanges([name rangeOfString:@"#1/"], NSMakeRange(0,3)))
   {
-    uint32_t len = [[name substringFromIndex:3] intValue];
+    uint32_t len = [name substringFromIndex:3].intValue;
     NSString * long_name = [dataController read_string:range fixlen:len lastReadHex:&lastReadHex];
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                            :lastReadHex
                            :@"Long Name"
                            :long_name];
     
-    objectInfo = [MVObjectInfo objectInfoWithName:long_name Length:[size_str intValue] - len];
+    objectInfo = [MVObjectInfo objectInfoWithName:long_name Length:size_str.intValue - len];
   }
   else 
   {
-    objectInfo = [MVObjectInfo objectInfoWithName:name Length:[size_str intValue]];
+    objectInfo = [MVObjectInfo objectInfoWithName:name Length:size_str.intValue];
   }
-  [objectInfoMap setObject:objectInfo forKey:[NSNumber numberWithUnsignedLong:location]];
+  objectInfoMap[@(location)] = objectInfo;
   
   node.dataRange = NSMakeRange(location, NSMaxRange(range) - location);
   
@@ -204,7 +204,7 @@
 
     uint32_t off = [dataController read_uint32:range lastReadHex:&lastReadHex];
     
-    MVObjectInfo * objectInfo = [objectInfoMap objectForKey:[NSNumber numberWithUnsignedLong:off + imageOffset]];
+    MVObjectInfo * objectInfo = objectInfoMap[@(off + imageOffset)];
     
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                            :lastReadHex
@@ -258,7 +258,7 @@
                                         location:location 
                                           length:0]; // length will be determined in function
     
-    MVObjectInfo * objectInfo = [objectInfoMap objectForKey:[NSNumber numberWithUnsignedLong:location]];
+    MVObjectInfo * objectInfo = objectInfoMap[@(location)];
     
     uint32_t objectOffset = NSMaxRange(headerNode.dataRange); // starts right after the header
     uint32_t objectSize = objectInfo.length;
@@ -271,7 +271,7 @@
     
     objectInfo.layout = [MachOLayout layoutWithDataController:dataController rootNode:objectNode];
     
-    [objectNode.userInfo setObject:objectInfo.layout forKey:MVLayoutUserInfoKey];
+    (objectNode.userInfo)[MVLayoutUserInfoKey] = objectInfo.layout;
     [objectInfo.layout doMainTasks];
     
     // move to the next header
@@ -283,7 +283,7 @@
                  caption:@"Symbol Table"
                 location:symtabOffset
                   length:symtabSize
-                  strtab:(char *)((uint8_t *)[dataController.fileData bytes] + strtabOffset + sizeof(uint32_t))]; 
+                  strtab:(char *)((uint8_t *)(dataController.fileData).bytes + strtabOffset + sizeof(uint32_t))]; 
   
   [self createDataNode:rootNode caption:@"String Table" 
               location:strtabOffset 
@@ -298,13 +298,13 @@
 {
   [dataController updateStatus:MVStatusTaskStarted];
   
-  for (MVObjectInfo * objectInfo in [objectInfoMap allValues])
+  for (MVObjectInfo * objectInfo in objectInfoMap.allValues)
   {
     MVLayout * layout = objectInfo.layout;
     
     // if the thread is cancelled, then the MVLayout::doBackgroundTasks will not been called
     // so, here is the only chance to stop the saver thread for the particular layout
-    if ([backgroundThread isCancelled])
+    if (backgroundThread.cancelled)
     {
       [layout.archiver halt];
       continue;

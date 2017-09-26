@@ -12,7 +12,7 @@
 
 @implementation MVPreferenceController
 
--(id)init
+-(instancetype)init
 {
   self = [super initWithWindowNibName:@"Preferences"];
   return self;
@@ -20,7 +20,7 @@
 
 - (IBAction)toggleUseLLVMDisassembler:(id)sender
 {
-  qflag = ([useLLVMDisassembler state] == NSOnState);
+  qflag = (useLLVMDisassembler.state == NSOnState);
 }
 
 @end

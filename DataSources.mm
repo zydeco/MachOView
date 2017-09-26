@@ -45,7 +45,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
 
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item 
 {
-  MVDocument * document = [[[outlineView window] windowController] document];
+  MVDocument * document = outlineView.window.windowController.document;
   if (item == nil)
   {
     return document.dataController.rootNode;
@@ -84,7 +84,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView
 {
-  MVDocument * document = [[[aTableView window] windowController] document];
+  MVDocument * document = aTableView.window.windowController.document;
   MVNode * selectedNode = document.dataController.selectedNode;
   
   // if there is no details, then provide binary dump
@@ -104,7 +104,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
 
 - (id)tableView:(NSTableView *)aTableView objectValueForTableColumn:(NSTableColumn *)aTableColumn row:(NSInteger)rowIndex
 {
-  MVDocument * document = [[[aTableView window] windowController] document];
+  MVDocument * document = aTableView.window.windowController.document;
   MVNode * selectedNode = document.dataController.selectedNode;
   
   // if it is closing...
@@ -113,7 +113,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
     return nil;
   }
   
-  NSUInteger colIndex = [[aTableView tableColumns] indexOfObject:aTableColumn];
+  NSUInteger colIndex = [aTableView.tableColumns indexOfObject:aTableColumn];
   
   //NSLog (@"queried (%d, %d)", rowIndex, colIndex);
   
@@ -128,7 +128,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
       NSString * cellContent = [NSString stringWithFormat:@"%.8lX", offset];
       if ([document isRVA] == YES)
       {
-        MVLayout *layout = [selectedNode.userInfo objectForKey:MVLayoutUserInfoKey];
+        MVLayout *layout = (selectedNode.userInfo)[MVLayoutUserInfoKey];
         return [layout convertToRVA:cellContent];
       }
       return cellContent;
@@ -139,7 +139,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
     
     NSUInteger len = MIN(selectedNode.dataRange.length - rowIndex * 16, (NSUInteger)16);
     
-    memcpy(buffer, (uint8_t *)[document.dataController.fileData bytes] + offset, len);
+    memcpy(buffer, (uint8_t *)(document.dataController.fileData).bytes + offset, len);
     
     if (colIndex == DATA_LO_COLUMN)
     {
@@ -180,20 +180,20 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
       
     // special column is the offset column:
     // if RVA is selected then subtitute the content on the fly
-    if (colIndex == OFFSET_COLUMN && [cellContent length] > 0) 
+    if (colIndex == OFFSET_COLUMN && cellContent.length > 0) 
     {
       if ([document isRVA] == YES)
       {
-        MVLayout *layout = [selectedNode.userInfo objectForKey:MVLayoutUserInfoKey];
+        MVLayout *layout = (selectedNode.userInfo)[MVLayoutUserInfoKey];
         cellContent = [layout convertToRVA:cellContent];
       }
     }
       
     // put formatting on display text
-    NSColor * color = [row.attributes objectForKey:MVTextColorAttributeName];
+    NSColor * color = (row.attributes)[MVTextColorAttributeName];
     if (color != nil)
     {
-      NSDictionary * attributes = [NSDictionary dictionaryWithObject:color forKey:NSForegroundColorAttributeName];
+      NSDictionary * attributes = @{NSForegroundColorAttributeName: color};
       return [[NSAttributedString alloc] initWithString:cellContent
                                              attributes:attributes];
     }
@@ -209,8 +209,8 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
   BOOL scanResult;
   uint32_t fileOffset;
 
-  NSUInteger colIndex = [[aTableView tableColumns] indexOfObject:aTableColumn];
-  MVDocument * document = [[[aTableView window] windowController] document];
+  NSUInteger colIndex = [aTableView.tableColumns indexOfObject:aTableColumn];
+  MVDocument * document = aTableView.window.windowController.document;
   NSString * cellContent = ([anObject isKindOfClass:[NSAttributedString class]] ? [anObject string] : anObject);
   NSScanner * scanner = [NSScanner scannerWithString:cellContent];
   MVNode * selectedNode = document.dataController.selectedNode;
@@ -233,7 +233,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
       return;
     }
     
-    NSRange dataRange = NSMakeRange(fileOffset, [cellContent length] / 2);
+    NSRange dataRange = NSMakeRange(fileOffset, cellContent.length / 2);
     
     if (dataRange.length <= sizeof(uint64_t))
     {
@@ -255,7 +255,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
       
       static char buf[3];
       char const * orgstr = CSTRING(cellContent);
-      for (NSUInteger s = 0; s < [cellContent length]; s += 2)
+      for (NSUInteger s = 0; s < cellContent.length; s += 2)
       {
         buf[0] = orgstr[s];
         buf[1] = orgstr[s+1];
@@ -264,7 +264,7 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
       }
       
       // replace data with the new value
-      [document.dataController.fileData replaceBytesInRange:dataRange withBytes:[mdata bytes]];
+      [document.dataController.fileData replaceBytesInRange:dataRange withBytes:mdata.bytes];
     }
 
     // update the cell content to indicate changes
@@ -280,10 +280,10 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
     fileOffset = selectedNode.dataRange.location + 16 * rowIndex + 8 * (colIndex == DATA_HI_COLUMN);
 
     // create a place holder for new value
-    NSMutableData * mdata = [NSMutableData dataWithCapacity:[cellContent length] / 3]; // each element = one byte plus space
+    NSMutableData * mdata = [NSMutableData dataWithCapacity:cellContent.length / 3]; // each element = one byte plus space
     
     // fill in placeholder
-    while ([scanner isAtEnd] == NO)
+    while (scanner.atEnd == NO)
     {
       unsigned value;
       
@@ -298,8 +298,8 @@ NSString * const MVScannerErrorMessage  = @"NSScanner error";
     }
     
     // replace data with the new value
-    [document.dataController.fileData replaceBytesInRange:NSMakeRange(fileOffset, [mdata length]) 
-                                                withBytes:[mdata bytes]];
+    [document.dataController.fileData replaceBytesInRange:NSMakeRange(fileOffset, mdata.length) 
+                                                withBytes:mdata.bytes];
     
     // do not need to update cell content...
   }

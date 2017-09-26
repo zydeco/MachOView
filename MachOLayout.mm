@@ -24,14 +24,14 @@ using namespace std;
 @implementation MachOLayout
 
 // ----------------------------------------------------------------------------
-- (id)init
+- (instancetype)init
 {
   NSAssert(NO, @"plain init is not allowed");
   return nil;
 }
 
 //-----------------------------------------------------------------------------
-- (id)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node 
+- (instancetype)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node 
 {
   if (self = [super initWithDataController:dc rootNode:node])
   {
@@ -99,7 +99,7 @@ using namespace std;
 - (NSString *)findSymbolAtRVA:(uint32_t)rva
 {
   NSParameterAssert([self is64bit] == NO);
-  NSString * symbolName = [symbolNames objectForKey:[NSNumber numberWithUnsignedLong:rva]];
+  NSString * symbolName = symbolNames[@(rva)];
   return (symbolName != nil ? symbolName : [NSString stringWithFormat:@"0x%X",rva]);
 }
 
@@ -112,7 +112,7 @@ using namespace std;
   {
     rva64 |= 0xffffffff00000000LL;
   }
-  NSString * symbolName = [symbolNames objectForKey:[NSNumber numberWithUnsignedLongLong:rva64]];
+  NSString * symbolName = symbolNames[@(rva64)];
   return (symbolName != nil ? symbolName : [NSString stringWithFormat:@"0x%qX",rva64]);
 }
 
@@ -270,7 +270,7 @@ _hex2int(char const * a, uint32_t len)
   // _hex2int is supposed to be must faster
   // note: on problems use the traditional scanner!
   
-  fileOffset = _hex2int(CSTRING(offsetStr), [offsetStr length]);
+  fileOffset = _hex2int(CSTRING(offsetStr), offsetStr.length);
   
   if (segmentInfo.empty() || 
       fileOffset < segmentInfo.begin()->first || 
@@ -289,12 +289,10 @@ _hex2int(char const * a, uint32_t len)
 {
   if (section == NULL) return nil;
   typeof(self) __weak weakSelf = self;
-  return [NSDictionary dictionaryWithObjectsAndKeys:
-          weakSelf,MVLayoutUserInfoKey,
-          NSSTRING(string(section->segname,16).c_str()), @"segname",
-          NSSTRING(string(section->sectname,16).c_str()), @"sectname",
-          [NSNumber numberWithUnsignedLong:section->addr], @"address",
-          nil];
+  return @{MVLayoutUserInfoKey: weakSelf,
+          @"segname": NSSTRING(string(section->segname,16).c_str()),
+          @"sectname": NSSTRING(string(section->sectname,16).c_str()),
+          @"address": @(section->addr)};
 }
 
 //-----------------------------------------------------------------------------
@@ -302,22 +300,18 @@ _hex2int(char const * a, uint32_t len)
 {
   if (section_64 == NULL) return nil;
   typeof(self) __weak weakSelf = self;
-  return [NSDictionary dictionaryWithObjectsAndKeys:
-          weakSelf,MVLayoutUserInfoKey,
-          NSSTRING(string(section_64->segname,16).c_str()), @"segname",
-          NSSTRING(string(section_64->sectname,16).c_str()), @"sectname",
-          [NSNumber numberWithUnsignedLongLong:section_64->addr], @"address",
-          nil];
+  return @{MVLayoutUserInfoKey: weakSelf,
+          @"segname": NSSTRING(string(section_64->segname,16).c_str()),
+          @"sectname": NSSTRING(string(section_64->sectname,16).c_str()),
+          @"address": @(section_64->addr)};
 }
 
 //-----------------------------------------------------------------------------
 - (NSDictionary *)userInfoForRelocs
 {
   typeof(self) __weak weakSelf = self;
-  return [NSDictionary dictionaryWithObjectsAndKeys:
-          weakSelf,MVLayoutUserInfoKey,
-          @"Relocations", MVNodeUserInfoKey,
-          nil];
+  return @{MVLayoutUserInfoKey: weakSelf,
+          MVNodeUserInfoKey: @"Relocations"};
 }
 
 //-----------------------------------------------------------------------------
@@ -350,8 +344,8 @@ _hex2int(char const * a, uint32_t len)
 {
   NSDictionary * userInfo = [self sectionInfoForRVA:rva];
   return (userInfo ? [NSString stringWithFormat:@"%8s %-16s",
-                      CSTRING([userInfo objectForKey:@"segname"]),
-                      CSTRING([userInfo objectForKey:@"sectname"])] : @"NO SECTION               ");
+                      CSTRING(userInfo[@"segname"]),
+                      CSTRING(userInfo[@"sectname"])] : @"NO SECTION               ");
 }
 
 //-----------------------------------------------------------------------------
@@ -359,8 +353,8 @@ _hex2int(char const * a, uint32_t len)
 {
   NSDictionary * userInfo = [self sectionInfoForRVA64:rva64];
   return (userInfo ? [NSString stringWithFormat:@"%8s %-16s",
-                      CSTRING([userInfo objectForKey:@"segname"]),
-                      CSTRING([userInfo objectForKey:@"sectname"])] : @"NO SECTION               ");
+                      CSTRING(userInfo[@"segname"]),
+                      CSTRING(userInfo[@"sectname"])] : @"NO SECTION               ");
 }
 
 //------------------------------------------------------------------------------
@@ -406,7 +400,7 @@ _hex2int(char const * a, uint32_t len)
         
         if (segment_command->fileoff == 0 && segment_command->filesize != 0)
         {
-					base_addr = segment_command->vmaddr;
+          base_addr = segment_command->vmaddr;
         }
 
         if(segment_command->vmaddr < seg1addr)
@@ -721,7 +715,7 @@ _hex2int(char const * a, uint32_t len)
         
         if (segment_command_64->fileoff == 0 && segment_command_64->filesize != 0)
         {
-					base_addr = segment_command_64->vmaddr;
+          base_addr = segment_command_64->vmaddr;
         }
         
         if(segment_command_64->vmaddr < seg1addr)
@@ -1025,7 +1019,7 @@ _hex2int(char const * a, uint32_t len)
         struct segment_command const * segment_command = (struct segment_command const *)load_command;
         if (segment_command->fileoff == 0 && segment_command->filesize != 0)
         {
-					base_addr = segment_command->vmaddr;
+          base_addr = segment_command->vmaddr;
         }
       } break;
 
@@ -1034,7 +1028,7 @@ _hex2int(char const * a, uint32_t len)
         struct segment_command_64 const * segment_command_64 = (struct segment_command_64 const *)load_command;
         if (segment_command_64->fileoff == 0 && segment_command_64->filesize != 0)
         {
-					base_addr = segment_command_64->vmaddr;
+          base_addr = segment_command_64->vmaddr;
         }
       } break;
       case LC_DYLD_INFO:
@@ -2497,7 +2491,7 @@ struct CompareSectionByName
 {
   NSBlockOperation * linkEditOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processLinkEdit]; else [self processLinkEdit64];
     }
@@ -2507,7 +2501,7 @@ struct CompareSectionByName
   
   NSBlockOperation * sectionRelocsOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processSectionRelocs]; else [self processSectionRelocs64];
     }
@@ -2516,7 +2510,7 @@ struct CompareSectionByName
   
   NSBlockOperation * dyldInfoOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       [self processDyldInfo];
     }
@@ -2525,7 +2519,7 @@ struct CompareSectionByName
   
   NSBlockOperation * sectionOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processSections]; else [self processSections64];
     }
@@ -2534,7 +2528,7 @@ struct CompareSectionByName
   
   NSBlockOperation * EHFramesOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processEHFrames]; else [self processEHFrames64];
     }
@@ -2543,7 +2537,7 @@ struct CompareSectionByName
   
   NSBlockOperation * LSDAsOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processLSDA]; else [self processLSDA64];
     }
@@ -2552,7 +2546,7 @@ struct CompareSectionByName
   
   NSBlockOperation * objcSectionOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processObjcSections]; else [self processObjcSections64];
     }
@@ -2561,7 +2555,7 @@ struct CompareSectionByName
 
   NSBlockOperation * codeSectionsOperation = [NSBlockOperation blockOperationWithBlock:^
   {
-    if ([backgroundThread isCancelled]) return;
+    if (backgroundThread.cancelled) return;
     @autoreleasepool {
       if ([self is64bit] == NO) [self processCodeSections]; else [self processCodeSections64];
     }
@@ -2578,22 +2572,21 @@ struct CompareSectionByName
   [LSDAsOperation         addDependency:EHFramesOperation];
     
   // setup priorities
-  [codeSectionsOperation  setQueuePriority:NSOperationQueuePriorityLow];
+  codeSectionsOperation.queuePriority = NSOperationQueuePriorityLow;
   
   // start operations
   NSOperationQueue * oq = [[NSOperationQueue alloc] init];
 
   [dataController updateStatus:MVStatusTaskStarted];
   
-  [oq   addOperations:[NSArray arrayWithObjects:linkEditOperation,
-                                                sectionOperation,
-                                                sectionRelocsOperation,
-                                                dyldInfoOperation,
-                                                EHFramesOperation,
-                                                LSDAsOperation,
-                                                objcSectionOperation,
-                                                codeSectionsOperation,nil] 
-    waitUntilFinished:YES];
+  [oq addOperations:@[linkEditOperation,
+                      sectionOperation,
+                      sectionRelocsOperation,
+                      dyldInfoOperation,
+                      EHFramesOperation,
+                      LSDAsOperation,
+                      objcSectionOperation,
+                      codeSectionsOperation] waitUntilFinished:YES];
   
   [super doBackgroundTasks];
   

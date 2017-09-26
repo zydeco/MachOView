@@ -12,26 +12,26 @@
 
 using namespace std;
 
-#define DW_EH_PE_absptr		0x00
+#define DW_EH_PE_absptr   0x00
 #define DW_EH_PE_omit     0xff
 
-#define DW_EH_PE_uleb128	0x01
-#define DW_EH_PE_udata2		0x02
-#define DW_EH_PE_udata4		0x03
-#define DW_EH_PE_udata8		0x04
-#define DW_EH_PE_sleb128	0x09
-#define DW_EH_PE_sdata2		0x0A
-#define DW_EH_PE_sdata4		0x0B
-#define DW_EH_PE_sdata8		0x0C
-#define DW_EH_PE_signed		0x08
+#define DW_EH_PE_uleb128  0x01
+#define DW_EH_PE_udata2   0x02
+#define DW_EH_PE_udata4   0x03
+#define DW_EH_PE_udata8   0x04
+#define DW_EH_PE_sleb128  0x09
+#define DW_EH_PE_sdata2   0x0A
+#define DW_EH_PE_sdata4   0x0B
+#define DW_EH_PE_sdata8   0x0C
+#define DW_EH_PE_signed   0x08
 
-#define DW_EH_PE_pcrel		0x10
-#define DW_EH_PE_textrel	0x20
-#define DW_EH_PE_datarel	0x30
-#define DW_EH_PE_funcrel	0x40
-#define DW_EH_PE_aligned	0x50
+#define DW_EH_PE_pcrel    0x10
+#define DW_EH_PE_textrel  0x20
+#define DW_EH_PE_datarel  0x30
+#define DW_EH_PE_funcrel  0x40
+#define DW_EH_PE_aligned  0x50
 
-#define DW_EH_PE_indirect	0x80
+#define DW_EH_PE_indirect 0x80
 
 //============================================================================
 @implementation MachOLayout (Exceptions)
@@ -285,7 +285,7 @@ using namespace std;
                          :@"Data Alignment Factor"
                          :[NSString stringWithFormat:@"%qd", CIE_dataAlignFactor]];
   
-  //Return Address Register	(Required)
+  //Return Address Register  (Required)
   uint8_t CIE_returnAddressRegister = [dataController read_uint8:range lastReadHex:&lastReadHex]; CIE_length -= range.length;
   [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                          :lastReadHex
@@ -305,10 +305,10 @@ using namespace std;
                            :@"Augmentation Length"
                            :[NSString stringWithFormat:@"%qu", CIE_augmentationLength]];
     
-    //Augmentation Data	(Optional)
+    //Augmentation Data  (Optional)
     // A block of data whose contents are defined by the contents of the Augmentation String as described below. 
     // This field is only present if the Augmentation String contains the character 'z'.
-    for (NSUInteger strIndex = 1; strIndex < [CIE_augmentationStr length]; ++strIndex)
+    for (NSUInteger strIndex = 1; strIndex < CIE_augmentationStr.length; ++strIndex)
     {
       switch ([CIE_augmentationStr characterAtIndex:strIndex])
       {
@@ -388,7 +388,7 @@ using namespace std;
     NSUInteger bookmark = node.details.rowCount;
     NSString * symbolName = nil;
     
-    //Length	(Required)
+    //Length  (Required)
     // A 4 byte unsigned value indicating the length in bytes of the CIE structure, not including the Length field itself. 
     // If Length contains the value 0xffffffff, then the length is contained the Extended Length field. 
     // If Length contains the value 0, then this CIE shall be considered a terminator and processing shall end.
@@ -398,11 +398,11 @@ using namespace std;
                            :@"FDE Length"
                            :[NSString stringWithFormat:@"%u", FDE_length]];
     
-    //Extended Length	(Optional)
+    //Extended Length  (Optional)
     // A 8 byte unsigned value indicating the length in bytes of the CIE structure, not including the Length field itself.
     NSAssert (FDE_length != 0xffffffff, @"FDE Extended length present");
     
-    //CIE Pointer	(Required)
+    //CIE Pointer  (Required)
     // A 4 byte unsigned value that when subtracted from the offset of the current FDE yields the offset of the start of the associated CIE. 
     // This value shall never be 0.
     uint32_t FDE_CIEvalue = [dataController read_uint32:range lastReadHex:&lastReadHex]; FDE_length -= range.length;
@@ -426,7 +426,7 @@ using namespace std;
                               ? [self findSymbolAtRVA:(uint32_t)FDE_CIEpointer]
                               : [self findSymbolAtRVA64:FDE_CIEpointer]];
     
-    //PC Begin	(Required)
+    //PC Begin  (Required)
     // An encoded constant that indicates the address of the initial location associated with this FDE.
     uint64_t PCBegin_addr = READ_USE_ENCODING(Pointer_encoding,range,lastReadHex); FDE_length -= range.length;
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
@@ -436,7 +436,7 @@ using namespace std;
                               ? (symbolName = [self guessSymbolUsingEncoding:Pointer_encoding atOffset:range.location withValue:(uint32_t &)PCBegin_addr])
                               : (symbolName = [self guessSymbol64UsingEncoding:Pointer_encoding atOffset:range.location withValue:PCBegin_addr])];
 
-    //PC Range	(Required)
+    //PC Range  (Required)
     // An encoded constant that indicates the number of bytes of instructions associated with this FDE.
     uint64_t FDE_PCRange = READ_USE_ENCODING(Pointer_encoding,range,lastReadHex); FDE_length -= range.length;
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
@@ -446,7 +446,7 @@ using namespace std;
     
     if ([CIE_augmentationStr rangeOfString:@"z"].location != NSNotFound)
     {
-      //Augmentation Data Length	(Optional)
+      //Augmentation Data Length  (Optional)
       // An unsigned LEB128 encoded value indicating the length in bytes of the Augmentation Data. 
       // This field is only present if the Augmentation String in the associated CIE contains the character 'z'.
       uint64_t FDE_augmentationLength = [dataController read_uleb128:range lastReadHex:&lastReadHex]; FDE_length -= range.length;
@@ -457,7 +457,7 @@ using namespace std;
       
       if (FDE_augmentationLength > 0) // LSDA is present
       {
-        //Augmentation Data	(Optional)
+        //Augmentation Data  (Optional)
         // A block of data whose contents are defined by the contents of the Augmentation String in the associated CIE as described above. 
         // This field is only present if the Augmentation String in the associated CIE contains the character 'z'.
         uint64_t LSDA_addr = READ_USE_ENCODING(LSDA_encoding,range,lastReadHex); FDE_length -= range.length;
@@ -475,7 +475,7 @@ using namespace std;
       }
     }
     
-    //Call Frame Instructions	(Required)
+    //Call Frame Instructions  (Required)
     // A set of Call Frame Instructions.
     [dataController read_bytes:range length:FDE_length lastReadHex:&lastReadHex];
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]

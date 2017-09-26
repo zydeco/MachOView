@@ -65,7 +65,7 @@ struct objc_category_t
 {
   uint32_t category_name;     // char * (32-bit pointer)
   uint32_t class_name;        // char * (32-bit pointer)
-  uint32_t instance_methods;	// struct objc_method_list * (32-bit pointer)
+  uint32_t instance_methods;  // struct objc_method_list * (32-bit pointer)
   uint32_t class_methods;     // struct objc_method_list * (32-bit pointer)
   uint32_t protocols;         // struct objc_protocol_list * (32-bit ptr)
 };
@@ -102,7 +102,7 @@ struct objc_protocol_t
   uint32_t isa;               // struct objc_class * (32-bit pointer) 
   uint32_t protocol_name;     // char * (32-bit pointer)
   uint32_t protocol_list;     // struct objc_protocol_list * (32-bit pointer)
-  uint32_t instance_methods;	// struct objc_method_description_list * (32-bit pointer)
+  uint32_t instance_methods;  // struct objc_method_description_list * (32-bit pointer)
   uint32_t class_methods;     // struct objc_method_description_list * (32-bit pointer)
 };
 
@@ -191,11 +191,11 @@ struct protocol_t
   uint32_t isa;               // id * (32-bit pointer)
   uint32_t name;              // const char * (32-bit pointer)
   uint32_t protocols;         // struct protocol_list_t * (32-bit pointer)
-  uint32_t instanceMethods;		// method_list_t * (32-bit pointer)
+  uint32_t instanceMethods;   // method_list_t * (32-bit pointer)
   uint32_t classMethods;      // method_list_t * (32-bit pointer)
-  uint32_t optionalInstanceMethods;	// method_list_t * (32-bit pointer)
-  uint32_t optionalClassMethods;	// method_list_t * (32-bit pointer)
-  uint32_t instanceProperties;	// struct objc_property_list * (32-bit pointer)
+  uint32_t optionalInstanceMethods;  // method_list_t * (32-bit pointer)
+  uint32_t optionalClassMethods;  // method_list_t * (32-bit pointer)
+  uint32_t instanceProperties;  // struct objc_property_list * (32-bit pointer)
 };
 
 struct objc_property_list 
@@ -294,11 +294,11 @@ struct protocol64_t
   uint64_t isa;               // id * (64-bit pointer)
   uint64_t name;              // const char * (64-bit pointer)
   uint64_t protocols;         // struct protocol_list_t * (64-bit pointer)
-  uint64_t instanceMethods;		// method_list_t * (64-bit pointer)
+  uint64_t instanceMethods;   // method_list_t * (64-bit pointer)
   uint64_t classMethods;      // method_list_t * (64-bit pointer)
-  uint64_t optionalInstanceMethods;	// method_list_t * (64-bit pointer)
-  uint64_t optionalClassMethods;	// method_list_t * (64-bit pointer)
-  uint64_t instanceProperties;	// struct objc_property_list * (64-bit pointer)
+  uint64_t optionalInstanceMethods;  // method_list_t * (64-bit pointer)
+  uint64_t optionalClassMethods;  // method_list_t * (64-bit pointer)
+  uint64_t instanceProperties;  // struct objc_property_list * (64-bit pointer)
 };
 
 struct objc_property64_list 
@@ -362,7 +362,7 @@ struct message_ref64
 {
   MVNode * node = [self sectionNodeContainsRVA:rva];
   // segment name must be __OBJC
-  return (node && [[node.userInfo objectForKey:@"segname"] isEqualToString:@"__OBJC"] ? node: nil);
+  return (node && [(node.userInfo)[@"segname"] isEqualToString:@"__OBJC"] ? node: nil);
 }
 
 //------------------------------------------------------------------------------

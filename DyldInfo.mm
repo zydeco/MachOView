@@ -18,11 +18,11 @@ using namespace std;
 @implementation DyldHelper
 
 //-----------------------------------------------------------------------------
--(id) initWithSymbols:(NSDictionary *)symbolNames is64Bit:(bool)is64Bit
+-(instancetype) initWithSymbols:(NSDictionary *)symbolNames is64Bit:(bool)is64Bit
 {
   if (self = [super init])
   {
-    externalMap = [[NSMutableDictionary alloc] initWithCapacity:[symbolNames count]];
+    externalMap = [[NSMutableDictionary alloc] initWithCapacity:symbolNames.count];
     
     NSEnumerator * enumerator = [symbolNames keyEnumerator];
     id key;
@@ -30,10 +30,10 @@ using namespace std;
     {
       NSNumber * symbolIndex = (NSNumber *)key;
       // negative index indicates that it is external
-      if ((is64Bit == NO && (int32_t)[symbolIndex unsignedLongValue] < 0) ||
-          (int64_t)[symbolIndex unsignedLongLongValue] < 0)
+      if ((is64Bit == NO && (int32_t)symbolIndex.unsignedLongValue < 0) ||
+          (int64_t)symbolIndex.unsignedLongLongValue < 0)
       {
-        [externalMap setObject:key forKey:[symbolNames objectForKey:key]];
+        externalMap[symbolNames[key]] = key;
       }
     }
   }
@@ -49,7 +49,7 @@ using namespace std;
 //-----------------------------------------------------------------------------
 -(NSNumber *) indexForSymbol:(NSString *)symbolName
 {
-  return [externalMap objectForKey:symbolName];
+  return externalMap[symbolName];
 }
 
 @end
@@ -370,7 +370,7 @@ using namespace std;
                libOrdinal == BIND_SPECIAL_DYLIB_MAIN_EXECUTABLE ? @"BIND_SPECIAL_DYLIB_MAIN_EXECUTABLE" :
                libOrdinal == BIND_SPECIAL_DYLIB_FLAT_LOOKUP ? @"BIND_SPECIAL_DYLIB_FLAT_LOOKUP" :
                (uint32_t)libOrdinal >= dylibs.size() ? @"???" :
-                 [NSSTRING((uint8_t *)dylib + dylib->name.offset - sizeof(struct load_command)) lastPathComponent]];
+                 NSSTRING((uint8_t *)dylib + dylib->name.offset - sizeof(struct load_command)).lastPathComponent];
   }
   
   [node.details appendRow:[NSString stringWithFormat:@"%.8X", location]
@@ -392,12 +392,12 @@ using namespace std;
       if ([self is64bit] == NO)
       {
         relocLocation = [self RVAToFileOffset:(uint32_t)address];
-        relocValue = [symbolIndex longValue];
+        relocValue = symbolIndex.longValue;
       }
       else
       {
         relocLocation = [self RVA64ToFileOffset:address];
-        relocValue = [symbolIndex longLongValue];
+        relocValue = symbolIndex.longLongValue;
       }
       
       // update real data

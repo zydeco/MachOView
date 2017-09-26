@@ -50,17 +50,17 @@ int64_t nrow_loaded; // number of loaded rows
   NSUInteger numberOfInstance = 0;
   
   NSWorkspace * workspace = [NSWorkspace sharedWorkspace];
-  for (NSRunningApplication * runningApplication in [workspace runningApplications])
+  for (NSRunningApplication * runningApplication in workspace.runningApplications)
   {
     // check if process name matches
-    NSString * fileName = [[runningApplication executableURL] lastPathComponent];
-    if ([fileName isEqualToString: [procInfo processName]] == NO)
+    NSString * fileName = runningApplication.executableURL.lastPathComponent;
+    if ([fileName isEqualToString: procInfo.processName] == NO)
     {
       continue;
     }
 
     // check if version string matches
-    NSBundle * bundle = [NSBundle bundleWithURL:[runningApplication bundleURL]];
+    NSBundle * bundle = [NSBundle bundleWithURL:runningApplication.bundleURL];
     if ([versionString isEqualToString:[bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"]] == YES && ++numberOfInstance > 1)
     {
       return NO;
@@ -77,17 +77,17 @@ int64_t nrow_loaded; // number of loaded rows
 - (IBAction)attach:(id)sender
 {
   NSAlert *alert = [[NSAlert alloc] init];
-  [alert setMessageText:@"Insert PID to attach to:"];
+  alert.messageText = @"Insert PID to attach to:";
   [alert addButtonWithTitle:@"Attach"];
   [alert addButtonWithTitle:@"Cancel"];
   NSTextField *input = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 200, 24)];
-  [input setStringValue:@""];
-  [alert setAccessoryView:input];
+  input.stringValue = @"";
+  alert.accessoryView = input;
   NSInteger button = [alert runModal];
   if (button == NSAlertFirstButtonReturn)
   {
     [input validateEditing];
-    pid_t targetPid = [input intValue];
+    pid_t targetPid = input.intValue;
     NSLog(@"Attach to process %d", targetPid);
     mach_vm_address_t mainAddress = 0;
     if (find_main_binary(targetPid, &mainAddress))
@@ -117,7 +117,7 @@ int64_t nrow_loaded; // number of loaded rows
       return;
     }
     /* dump buffer contents to temporary file to use the NSDocument model */
-    const char *tmp = [[MVDocument temporaryDirectory] UTF8String];
+    const char *tmp = [MVDocument temporaryDirectory].UTF8String;
     char *dumpFilePath = (char*)malloc(strlen(tmp)+1);
     if (dumpFilePath == NULL)
     {
@@ -145,10 +145,10 @@ int64_t nrow_loaded; // number of loaded rows
     NSLog(@"\n[OK] Full binary dumped to %s!\n\n", dumpFilePath);
     close(outputFile);
     
-    [self application:NSApp openFile:[NSString stringWithCString:dumpFilePath encoding:NSUTF8StringEncoding]];
+    [self application:NSApp openFile:@(dumpFilePath)];
     /* remove temporary dump file, not required anymore */
     NSFileManager * fileManager = [NSFileManager defaultManager];
-    [fileManager removeItemAtPath:[NSString stringWithCString:dumpFilePath encoding:NSUTF8StringEncoding] error:NULL];
+    [fileManager removeItemAtPath:@(dumpFilePath) error:NULL];
     free(dumpFilePath);
     free(readbuffer);
   }
@@ -170,7 +170,7 @@ int64_t nrow_loaded; // number of loaded rows
   [openPanel setAllowsMultipleSelection:YES];
   [openPanel setCanChooseDirectories:NO];
   [openPanel setCanChooseFiles:YES];
-  [openPanel setDelegate:self]; // for filtering files in open panel with shouldShowFilename
+  openPanel.delegate = self; // for filtering files in open panel with shouldShowFilename
   [openPanel beginSheetModalForWindow:NSApp.modalWindow
                     completionHandler:^(NSInteger result)
                     {
@@ -179,9 +179,9 @@ int64_t nrow_loaded; // number of loaded rows
                         return;
                       }
                       [openPanel orderOut:self]; // close panel before we might present an error
-                      for (NSURL * url in [openPanel URLs])
+                      for (NSURL * url in openPanel.URLs)
                       {
-                        [self application:NSApp openFile:[url path]];
+                        [self application:NSApp openFile:url.path];
                       }
                     }];
 }
@@ -192,7 +192,7 @@ int64_t nrow_loaded; // number of loaded rows
   // can enter directories
   NSNumber * isDirectory = nil;
   [url getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL];
-  if ([isDirectory boolValue] == YES) 
+  if (isDirectory.boolValue == YES) 
   {
     return YES;
   }
@@ -200,7 +200,7 @@ int64_t nrow_loaded; // number of loaded rows
   // skip symbolic links, etc.
   NSNumber * isRegularFile = nil;
   [url getResourceValue:&isRegularFile forKey:NSURLIsRegularFileKey error:NULL];
-  if ([isRegularFile boolValue] == NO) 
+  if (isRegularFile.boolValue == NO) 
   {
     return NO;
   }
@@ -210,24 +210,24 @@ int64_t nrow_loaded; // number of loaded rows
   NSData * magicData = [fileHandle readDataOfLength:8];
   [fileHandle closeFile];
   
-  if ([magicData length] < sizeof(uint32_t))
+  if (magicData.length < sizeof(uint32_t))
   {
     return NO;
   }
   
-  uint32_t magic = *(uint32_t*)[magicData bytes];
+  uint32_t magic = *(uint32_t*)magicData.bytes;
   if (magic == MH_MAGIC || magic == MH_MAGIC_64 || 
       magic == FAT_CIGAM || magic == FAT_MAGIC)
   {
     return YES;
   }
   
-  if ([magicData length] < sizeof(uint64_t))
+  if (magicData.length < sizeof(uint64_t))
   {
     return NO;
   }
   
-  if (*(uint64_t*)[magicData bytes] == *(uint64_t*)"!<arch>\n")
+  if (*(uint64_t*)magicData.bytes == *(uint64_t*)"!<arch>\n")
   {
     return YES;
   }
@@ -287,7 +287,7 @@ int64_t nrow_loaded; // number of loaded rows
   // if there is no document yet, then pop up an open file dialogue
   // XXX: irrelevant check, no?
   // resp: in case of drag and drop file to the MachOView it is relevant
-  if ([[[NSDocumentController sharedDocumentController] documents] count] == 0)
+  if ([NSDocumentController sharedDocumentController].documents.count == 0)
   {
     [self openDocument:nil];
   }

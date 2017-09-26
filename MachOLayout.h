@@ -55,13 +55,13 @@ typedef std::map<uint64_t,uint64_t>                       ExceptionFrameMap;    
 
 + (MachOLayout *)layoutWithDataController:(MVDataController *)dc rootNode:(MVNode *)node;
 
-- (struct section const *)getSectionByIndex:(uint32_t)index;
-- (struct section_64 const *)getSection64ByIndex:(uint32_t)index;
+- (struct section const *)getSectionByIndex:(uint32_t)index NS_RETURNS_INNER_POINTER;
+- (struct section_64 const *)getSection64ByIndex:(uint32_t)index NS_RETURNS_INNER_POINTER;
 
-- (struct nlist const *)getSymbolByIndex:(uint32_t)index;
-- (struct nlist_64 const *)getSymbol64ByIndex:(uint32_t)index;
+- (struct nlist const *)getSymbolByIndex:(uint32_t)index NS_RETURNS_INNER_POINTER;
+- (struct nlist_64 const *)getSymbol64ByIndex:(uint32_t)index NS_RETURNS_INNER_POINTER;
 
-- (struct dylib const *)getDylibByIndex:(uint32_t)index;
+- (struct dylib const *)getDylibByIndex:(uint32_t)index NS_RETURNS_INNER_POINTER;
 
 - (NSDictionary *)userInfoForSection:(struct section const *)section;
 - (NSDictionary *)userInfoForSection64:(struct section_64 const *)section_64;

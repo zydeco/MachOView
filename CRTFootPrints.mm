@@ -1371,7 +1371,7 @@ static AsmFootPrint const SDK109Target104X86 = {
   if (!dataController) // dataController is weak
     return false;
   
-  uint8_t const * data = ((uint8_t *)[dataController.fileData bytes]) + offset;
+  uint8_t const * data = ((uint8_t *)(dataController.fileData).bytes) + offset;
   
   for (NSUInteger i = 0; i < lineCount; ++i)
   {
@@ -1411,7 +1411,7 @@ static AsmFootPrint const SDK109Target104X86 = {
   
   NSLog(@"%@: file offset of OEP: 0x%X", self, offset);
   
-  uint32_t dataLength = [dataController.fileData length];
+  uint32_t dataLength = (dataController.fileData).length;
   
   if (offset >= dataLength)
   {

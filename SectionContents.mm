@@ -47,8 +47,7 @@ using namespace std;
     
     [node.details setAttributes:MVMetaDataAttributeName,symbolName,nil];
     
-    [symbolNames setObject:symbolName 
-                    forKey:[NSNumber numberWithUnsignedLong:[self fileOffsetToRVA:range.location]]];
+    symbolNames[@([self fileOffsetToRVA:range.location])] = symbolName;
   }
   
   return node;
@@ -80,8 +79,7 @@ using namespace std;
     
     [node.details setAttributes:MVMetaDataAttributeName,symbolName,nil];
     
-    [symbolNames setObject:symbolName 
-                    forKey:[NSNumber numberWithUnsignedLongLong:[self fileOffsetToRVA64:range.location]]];
+    symbolNames[@([self fileOffsetToRVA64:range.location])] = symbolName;
   }
   
   return node;
@@ -105,7 +103,7 @@ using namespace std;
     
     [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                            :lastReadHex
-                           :[NSString stringWithFormat:@"CString (length:%lu)", [symbolName length]]
+                           :[NSString stringWithFormat:@"CString (length:%lu)", symbolName.length]
                            :symbolName];
     
     [node.details setAttributes:MVMetaDataAttributeName,symbolName,nil];
@@ -114,14 +112,12 @@ using namespace std;
     if ([self is64bit] == NO)
     {
       uint32_t rva = [self fileOffsetToRVA:range.location];
-      [symbolNames setObject:[NSString stringWithFormat:@"0x%X:\"%@\"", rva, symbolName]
-                      forKey:[NSNumber numberWithUnsignedLong:rva]];
+      symbolNames[@(rva)] = [NSString stringWithFormat:@"0x%X:\"%@\"", rva, symbolName];
     }
     else
     {
       uint64_t rva64 = [self fileOffsetToRVA64:range.location];
-      [symbolNames setObject:[NSString stringWithFormat:@"0x%qX:\"%@\"", rva64, symbolName]
-                      forKey:[NSNumber numberWithUnsignedLongLong:rva64]];
+      symbolNames[@(rva64)] = [NSString stringWithFormat:@"0x%qX:\"%@\"", rva64, symbolName];
     }
   }
   
@@ -150,20 +146,20 @@ using namespace std;
     {
       case sizeof(float): 
       {
-        double num = *(float *)[data bytes];
+        double num = *(float *)data.bytes;
         literalStr = [NSString stringWithFormat:@"%.16g", num];
       } break;
       
       case sizeof(double): 
       {
-        double num = *(double *)[data bytes]; 
+        double num = *(double *)data.bytes; 
         literalStr = [NSString stringWithFormat:@"%.16g", num];
       } break;
         
       default:
       case sizeof(long double): 
       {
-        long double num = *(long double *)[data bytes]; 
+        long double num = *(long double *)data.bytes; 
         literalStr = [NSString stringWithFormat:@"%.16Lg", num];
       } break;
     }
@@ -177,14 +173,12 @@ using namespace std;
     if ([self is64bit] == NO)
     {
       uint32_t rva = [self fileOffsetToRVA:range.location];
-      [symbolNames setObject:[NSString stringWithFormat:@"0x%X:%@f", rva, literalStr]
-                      forKey:[NSNumber numberWithUnsignedLong:rva]]; 
+      symbolNames[@(rva)] = [NSString stringWithFormat:@"0x%X:%@f", rva, literalStr]; 
     }
     else
     {
       uint64_t rva64 = [self fileOffsetToRVA64:range.location];
-      [symbolNames setObject:[NSString stringWithFormat:@"0x%qX:%@f", rva64, literalStr]
-                      forKey:[NSNumber numberWithUnsignedLongLong:rva64]]; 
+      symbolNames[@(rva64)] = [NSString stringWithFormat:@"0x%qX:%@f", rva64, literalStr]; 
     }
   }
   return node;
@@ -306,29 +300,29 @@ using namespace std;
 //===========================================================
 static AsmFootPrint const classicStubHelperX86 =
 {
-	{1, 0x68}, GAP(4),                        // pushl   $foo$lazy_ptr
-	{1, 0xE9}, GAP(4),                        // jmp     helperhelper
+    {1, 0x68}, GAP(4),                        // pushl   $foo$lazy_ptr
+    {1, 0xE9}, GAP(4),                        // jmp     helperhelper
 };
 
 static AsmFootPrint const hybridStubHelperX86 =
 {
   {1, 0x68}, GAP(4),                        // pushl   $lazy-info-offset
-	{1, 0x68}, GAP(4),                        // pushl   $foo$lazy_ptr
-	{1, 0xE9}, GAP(4),                        // jmp     dyld_hybrid_stub_binding_helper
-	{1, 0x90},                                // nop
+    {1, 0x68}, GAP(4),                        // pushl   $foo$lazy_ptr
+    {1, 0xE9}, GAP(4),                        // jmp     dyld_hybrid_stub_binding_helper
+    {1, 0x90},                                // nop
 };
 
 static AsmFootPrint const hybridStubHelperHelperX86 =
 {
   {2, 0x83, 0x3D}, GAP(4), {1, 0x00},       // cmpl    $0x00,_fast_lazy_bind
-	{2, 0x75,	0x0D},                          // jne     $0x0D
-	{4, 0x89,	0x44, 0x24, 0x04},              // movl    %eax,4(%esp)
-	{1, 0x58},                                // popl    %eax
-	{3, 0x87, 0x04, 0x24},                    // xchgl   (%esp),%eax
-	{1, 0xE9}, GAP(4),                        // jmpl    dyld_stub_binding_helper
-	{3, 0x83, 0xC4, 0x04},                    // addl    $0x04,%esp
-	{1, 0x68}, GAP(4),                        // pushl   imageloadercache
-	{2, 0xFF, 0x25}, GAP(4),                  // jmp     *_fast_lazy_bind(%rip)
+    {2, 0x75,    0x0D},                          // jne     $0x0D
+    {4, 0x89,    0x44, 0x24, 0x04},              // movl    %eax,4(%esp)
+    {1, 0x58},                                // popl    %eax
+    {3, 0x87, 0x04, 0x24},                    // xchgl   (%esp),%eax
+    {1, 0xE9}, GAP(4),                        // jmpl    dyld_stub_binding_helper
+    {3, 0x83, 0xC4, 0x04},                    // addl    $0x04,%esp
+    {1, 0x68}, GAP(4),                        // pushl   imageloadercache
+    {2, 0xFF, 0x25}, GAP(4),                  // jmp     *_fast_lazy_bind(%rip)
 };
 
 static AsmFootPrint const fastStubHelperX86 =
@@ -339,9 +333,9 @@ static AsmFootPrint const fastStubHelperX86 =
 
 static AsmFootPrint const fastStubHelperHelperX86 =
 {
-	{1, 0x68}, GAP(4),                        // pushl   imageloadercache
-	{2, 0xFF, 0x25}, GAP(4),                  // jmp     *_fast_lazy_bind
-	{1, 0x90},                                // nop
+    {1, 0x68}, GAP(4),                        // pushl   imageloadercache
+    {2, 0xFF, 0x25}, GAP(4),                  // jmp     *_fast_lazy_bind
+    {1, 0x90},                                // nop
 };
 
 //=========================== X86_64 ========================
@@ -349,35 +343,35 @@ static AsmFootPrint const fastStubHelperHelperX86 =
 
 static AsmFootPrint const classicStubHelperX86_64 =
 {
-  {3, 0x4C,	0x8D, 0x1D}, GAP(4),            // lea    foo$lazy_ptr(%rip),%r11
-	{1, 0xE9}, GAP(4),                        // jmp    dyld_stub_binding_helper
+  {3, 0x4C,    0x8D, 0x1D}, GAP(4),            // lea    foo$lazy_ptr(%rip),%r11
+    {1, 0xE9}, GAP(4),                        // jmp    dyld_stub_binding_helper
 };
 
 
 static AsmFootPrint const hybridStubHelperX86_64 =
 {
   {1, 0x68}, GAP(4),                        // pushq  $lazy-info-offset
-	{3, 0x4C, 0x8D, 0x1D}, GAP(4),            // lea    foo$lazy_ptr(%rip),%r11
-	{1, 0xE9}, GAP(4),                        // jmp    helper-helper
-	{1, 0x90},                                // nop
+    {3, 0x4C, 0x8D, 0x1D}, GAP(4),            // lea    foo$lazy_ptr(%rip),%r11
+    {1, 0xE9}, GAP(4),                        // jmp    helper-helper
+    {1, 0x90},                                // nop
 };
 
 static AsmFootPrint const hybridStubHelperHelperX86_64 =
 {
   {3, 0x48, 0x83, 0x3D}, GAP(4), {1, 0x00}, // cmpq   $0x00,_fast_lazy_bind
-	{2, 0x74,	0x0F},                          // je     $0x0F
-	{3, 0x4C, 0x8D,	0x1D}, GAP(4),            // leaq   imageCache(%rip),%r11
-	{2, 0x41,	0x53},                          // pushq  %r11
-	{2, 0xFF,	0x25}, GAP(4),                  // jmp    *_fast_lazy_bind(%rip)
-	{4, 0x48, 0x83, 0xC4, 0x08},              // addq   $8,%rsp
-	{1, 0xE9}, GAP(4),                        // jmp    dyld_stub_binding_helper
+    {2, 0x74,    0x0F},                          // je     $0x0F
+    {3, 0x4C, 0x8D,    0x1D}, GAP(4),            // leaq   imageCache(%rip),%r11
+    {2, 0x41,    0x53},                          // pushq  %r11
+    {2, 0xFF,    0x25}, GAP(4),                  // jmp    *_fast_lazy_bind(%rip)
+    {4, 0x48, 0x83, 0xC4, 0x08},              // addq   $8,%rsp
+    {1, 0xE9}, GAP(4),                        // jmp    dyld_stub_binding_helper
 };
 
 
 static AsmFootPrint const fastStubHelperX86_64 =
 {
   {1, 0x68}, GAP(4),                        // pushq  $lazy-info-offset
-	{1, 0xE9}, GAP(4),                        // jmp    helperhelper
+    {1, 0xE9}, GAP(4),                        // jmp    helperhelper
 };
 
 static AsmFootPrint const fastStubHelperHelperX86_64 =
@@ -393,7 +387,7 @@ static AsmFootPrint const fastStubHelperHelperX86_64 =
 static AsmFootPrint const fastStubHelperARM =
 {
   {4, 0xe5, 0x9f, 0xc0, 0x00},              // ldr  ip, [pc, #0]
-	{4, 0xea, 0x00, 0x00, 0x00},              // b	_helperhelper
+    {4, 0xea, 0x00, 0x00, 0x00},              // b    _helperhelper
   GAP(4),                                   // lazy binding info
 };
 
@@ -402,13 +396,13 @@ static AsmFootPrint const fastStubHelperHelperARM =
   // push lazy-info-offset
   {4, 0xe5, 0x2d, 0xc0, 0x04},              // str ip, [sp, #-4]!
   // push address of dyld_mageLoaderCache
-  {4, 0xe5, 0x9f, 0xc0, 0x10},              // ldr	ip, L1
-  {4, 0xe0, 0x8f, 0xc0, 0x0c},              // add	ip, pc, ip
+  {4, 0xe5, 0x9f, 0xc0, 0x10},              // ldr    ip, L1
+  {4, 0xe0, 0x8f, 0xc0, 0x0c},              // add    ip, pc, ip
   {4, 0xe5, 0x2d, 0xc0, 0x04},              // str ip, [sp, #-4]!
   // jump through _fast_lazy_bind
-  {4, 0xe5, 0x9f, 0xc0, 0x08},              // ldr	ip, L2
-  {4, 0xe0, 0x8f, 0xc0, 0x0c},              // add	ip, pc, ip
-  {4, 0xe5, 0x9c, 0xf0, 0x00},              // ldr	pc, [ip]
+  {4, 0xe5, 0x9f, 0xc0, 0x08},              // ldr    ip, L2
+  {4, 0xe0, 0x8f, 0xc0, 0x0c},              // add    ip, pc, ip
+  {4, 0xe5, 0x9c, 0xf0, 0x00},              // ldr    pc, [ip]
   GAP(4),                                   // L1: .long fFastStubGOTAtom - (helperhelper+16)
   GAP(4),                                   // L2: .long _fast_lazy_bind - (helperhelper+28)
 };
@@ -565,7 +559,7 @@ static AsmFootPrint const fastStubHelperHelperARM =
   //===========================================================================
   MATCH_STRUCT(mach_header,imageOffset);
   
-  char *                      ot_sect = (char *)[dataController.fileData bytes] + location;
+  char *                      ot_sect = (char *)(dataController.fileData).bytes + location;
   uint32_t                    ot_left = length;
   uint64_t                    ot_addr = ([self is64bit] == NO ? [self fileOffsetToRVA:location] : [self fileOffsetToRVA64:location]);
   uint64_t                    ot_sect_addr = ot_addr;
@@ -575,7 +569,7 @@ static AsmFootPrint const fastStubHelperHelperARM =
   struct nlist_64 *           ot_symbols64 = (symbols_64.empty() ? NULL : const_cast<struct nlist_64 *>(symbols_64[0]));
   uint32_t                    ot_nsymbols = ([self is64bit] == NO ? symbols.size() : symbols_64.size());
   char *                      ot_strings = (char *)strtab;
-  uint32_t                    ot_strings_size = (char *)[dataController.fileData bytes] - strtab;
+  uint32_t                    ot_strings_size = (char *)(dataController.fileData).bytes - strtab;
   uint32_t *                  ot_indirect_symbols = (isymbols.empty() ? NULL : const_cast<uint32_t *>(isymbols[0]));
   uint32_t                    ot_nindirect_symbols = isymbols.size();
   struct load_command *       ot_load_commands = (struct load_command *)(commands[0]);
@@ -663,8 +657,10 @@ static AsmFootPrint const fastStubHelperHelperARM =
     in_thumb = TRUE;
   }
   else
-		in_thumb = FALSE;
-
+  {
+    in_thumb = FALSE;
+  }
+  
   //===========================================================================
   // collect thumb symbols
   set<uint64_t> thumbSymbols;
@@ -710,15 +706,15 @@ static AsmFootPrint const fastStubHelperHelperARM =
     NSNumber * symbolIndex = (NSNumber *)key;
     
     // skip external symbols
-    if (([self is64bit] == NO && (int32_t)[symbolIndex unsignedLongValue] < 0) ||
-        (int64_t)[symbolIndex unsignedLongLongValue] < 0)
+    if (([self is64bit] == NO && (int32_t)symbolIndex.unsignedLongValue < 0) ||
+        (int64_t)symbolIndex.unsignedLongLongValue < 0)
     {
       continue;
     }
 
     struct symbol symbol;
-    symbol.name = strdup(CSTRING([symbolNames objectForKey:key]));
-    symbol.n_value = [symbolIndex unsignedLongLongValue];
+    symbol.name = strdup(CSTRING(symbolNames[key]));
+    symbol.n_value = symbolIndex.unsignedLongLongValue;
     symbol.is_thumb = (thumbSymbols.find(symbol.n_value) != thumbSymbols.end());
     
     sorted_symbols.push_back(symbol);
@@ -733,29 +729,28 @@ static AsmFootPrint const fastStubHelperHelperARM =
   //===========================================================================
   /* collect relocations entries */
  
-  struct relocation_info *  ot_relocs = (struct relocation_info *)((char *)[dataController.fileData bytes] + reloff);
+  struct relocation_info *  ot_relocs = (struct relocation_info *)((char *)(dataController.fileData).bytes + reloff);
   uint32_t                  ot_nrelocs = nreloc;
 
-  struct relocation_info *  ot_ext_relocs = (struct relocation_info *)((char *)[dataController.fileData bytes] + extreloff);
+  struct relocation_info *  ot_ext_relocs = (struct relocation_info *)((char *)(dataController.fileData).bytes + extreloff);
   uint32_t                  ot_next_relocs = nextrel;
   
-  struct relocation_info *  ot_loc_relocs = (struct relocation_info *)((char *)[dataController.fileData bytes] + locreloff);
+  struct relocation_info *  ot_loc_relocs = (struct relocation_info *)((char *)(dataController.fileData).bytes + locreloff);
   uint32_t                  ot_nloc_relocs = nlocrel;
 
   
   //===========================================================================
   /*
-  start = (uint8_t *)(object_addr + dyld_info.bind_off);
-	end = start + dyld_info.bind_size;
-	get_dyld_bind_info(start, end, dylibs, ndylibs, segs, nsegs,
-                     segs64, nsegs64, dbi, ndbi);
+    start = (uint8_t *)(object_addr + dyld_info.bind_off);
+    end = start + dyld_info.bind_size;
+    get_dyld_bind_info(start, end, dylibs, ndylibs, segs, nsegs, segs64, nsegs64, dbi, ndbi);
   */
   //===========================================================================
 
   do
   {
     // catch thread cancellation request
-    if ([backgroundThread isCancelled])
+    if (backgroundThread.cancelled)
     {
       break;
     }

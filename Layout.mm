@@ -24,14 +24,14 @@
 */
 
 //-----------------------------------------------------------------------------
-- (id)init
+- (instancetype)init
 {
   NSAssert(NO, @"plain init is not allowed");
   return nil;
 }
 
 //-----------------------------------------------------------------------------
-- (id)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node
+- (instancetype)initWithDataController:(MVDataController *)dc rootNode:(MVNode *)node
 {
   if (self = [super init]) 
   {
@@ -41,7 +41,7 @@
     imageSize = node.dataRange.length;
     backgroundThread = [[NSThread alloc] initWithTarget:self selector:@selector(doBackgroundTasks) object:nil];
     
-    const char *tmp = [[MVDocument temporaryDirectory] UTF8String];
+    const char *tmp = [MVDocument temporaryDirectory].UTF8String;
     char *swapFilePath = strdup(tmp);
     if (mktemp(swapFilePath) == NULL)
     {
@@ -50,7 +50,7 @@
       return NO;
     }
 
-    NSString *swapPath = [NSString stringWithFormat:@"%s.%@", swapFilePath, [[dataController fileName] lastPathComponent]];
+    NSString *swapPath = [NSString stringWithFormat:@"%s.%@", swapFilePath, dataController.fileName.lastPathComponent];
     free(swapFilePath);
     archiver = [MVArchiver archiverWithPath:swapPath];
   }
@@ -60,14 +60,14 @@
 //-----------------------------------------------------------------------------
 - (void const *)imageAt:(uint32_t)location
 {
-  auto p = (uint8_t const *)[dataController.realData bytes];
+  auto p = (uint8_t const *)(dataController.realData).bytes;
   return p ? p + location : NULL;
 }
 
 //-----------------------------------------------------------------------------
 - (NSString *)description
 {
-  return [[super description] stringByAppendingFormat:@" [%@]",rootNode.caption];
+  return [super.description stringByAppendingFormat:@" [%@]",rootNode.caption];
 }
 
 //-----------------------------------------------------------------------------
@@ -75,10 +75,10 @@
 {
   @synchronized([NSApp class])
   {
-    NSLog(@"%@: Exception (%@): %@", self, caption, [exception name]);
-    NSLog(@"  Reason: %@", [exception reason]);
-    NSLog(@"  User Info: %@", [exception userInfo]);
-    NSLog(@"  Backtrace:\n%@", [exception callStackSymbols]);
+    NSLog(@"%@: Exception (%@): %@", self, caption, exception.name);
+    NSLog(@"  Reason: %@", exception.reason);
+    NSLog(@"  User Info: %@", exception.userInfo);
+    NSLog(@"  Backtrace:\n%@", exception.callStackSymbols);
   }
 }
 

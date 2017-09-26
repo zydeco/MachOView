@@ -107,7 +107,7 @@
   NSMutableString * lastReadHex = [NSMutableString stringWithCapacity:2*range.length];
   for (NSUInteger i = 0; i < range.length; ++i)
   {
-    int value = *((uint8_t *)[fileData bytes] + range.location + i);
+    int value = *((uint8_t *)fileData.bytes + range.location + i);
     [lastReadHex appendFormat:@"%.2X",value];
   }
   return lastReadHex;
@@ -116,7 +116,7 @@
 //-----------------------------------------------------------------------------
 - (NSString *) replaceEscapeCharsInString: (NSString *)orig
 {
-  NSUInteger len = [orig length];
+  NSUInteger len = orig.length;
   NSMutableString * str = [[NSMutableString alloc] init];
   SEL sel = @selector(characterAtIndex:);
   unichar (*charAtIdx)(id, SEL, NSUInteger) = (typeof(charAtIdx)) [orig methodForSelector:sel];
@@ -141,7 +141,7 @@
 {
   range.location = NSMaxRange(range);
   NSString * str = NSSTRING((uint8_t *)[fileData bytes] + range.location);
-  range.length = [str length] + 1;
+  range.length = str.length + 1;
   if (lastReadHex) *lastReadHex = [self getHexStr:range];
   return [self replaceEscapeCharsInString:str];
 }
@@ -174,7 +174,7 @@
 - (int64_t)read_sleb128:(NSRange &)range lastReadHex:(NSString **)lastReadHex
 {
   range.location = NSMaxRange(range);
-  uint8_t * p = (uint8_t *)[fileData bytes] + range.location, *start = p;
+  uint8_t * p = (uint8_t *)fileData.bytes + range.location, *start = p;
   
   int64_t result = 0;
   int bit = 0;
@@ -201,7 +201,7 @@
 - (uint64_t)read_uleb128:(NSRange &)range lastReadHex:(NSString **)lastReadHex
 {
   range.location = NSMaxRange(range);
-  uint8_t * p = (uint8_t *)[fileData bytes] + range.location, *start = p;
+  uint8_t * p = (uint8_t *)fileData.bytes + range.location, *start = p;
   
   uint64_t result = 0;
   int bit = 0;
