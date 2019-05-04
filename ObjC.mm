@@ -2881,6 +2881,20 @@ struct message_ref64
                          classRO:class_ro_t];
   }
   
+  // metaclass
+  if (class_t->isa && (childNode = [self sectionNodeContainsRVA64:class_t->isa]))
+  {
+    uint32_t location = [self RVA64ToFileOffset:class_t->isa];
+    NSString * caption = [self findSymbolAtRVA64:class_t->isa];
+    {
+      MATCH_STRUCT(class_t,location)
+      [self createObjC2ClassNode:childNode
+                           caption:caption
+                          location:location
+                             class:class_t];
+    }
+  }
+  
   return node;
 }
 
@@ -2954,6 +2968,20 @@ struct message_ref64
                            caption:caption
                           location:location
                            classRO:class64_ro_t];
+  }
+    
+  // metaclass
+  if (class64_t->isa && (childNode = [self sectionNodeContainsRVA64:class64_t->isa]))
+  {
+    uint32_t location = [self RVA64ToFileOffset:class64_t->isa];
+    NSString * caption = [self findSymbolAtRVA64:class64_t->isa];
+    {
+      MATCH_STRUCT(class64_t,location)
+      [self createObjC2Class64Node:childNode
+                           caption:caption
+                          location:location
+                             class:class64_t];
+    }
   }
   
   return node;
