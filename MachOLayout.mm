@@ -292,7 +292,8 @@ _hex2int(char const * a, uint32_t len)
   return @{MVLayoutUserInfoKey: weakSelf,
           @"segname": NSSTRING(string(section->segname,16).c_str()),
           @"sectname": NSSTRING(string(section->sectname,16).c_str()),
-          @"address": @(section->addr)};
+          @"address": @(section->addr),
+          @"size": @(section->size)};
 }
 
 //-----------------------------------------------------------------------------
@@ -303,7 +304,8 @@ _hex2int(char const * a, uint32_t len)
   return @{MVLayoutUserInfoKey: weakSelf,
           @"segname": NSSTRING(string(section_64->segname,16).c_str()),
           @"sectname": NSSTRING(string(section_64->sectname,16).c_str()),
-          @"address": @(section_64->addr)};
+          @"address": @(section_64->addr),
+          @"size": @(section_64->size)};
 }
 
 //-----------------------------------------------------------------------------
@@ -324,7 +326,13 @@ _hex2int(char const * a, uint32_t len)
     NSLog(@"warning: no section info found for address 0x%.8X",rva);
     return nil;
   }
-  return (--iter)->second.second;
+  NSDictionary *sectionInfo = (--iter)->second.second;
+  unsigned long long sectionSize = [sectionInfo[@"size"] unsignedLongLongValue];
+  if (sectionSize && rva > (iter->first + sectionSize)) {
+    NSLog(@"warning: address 0x%.8X out of bounds for section",rva);
+    return nil;
+  }
+  return sectionInfo;
 }
 
 //-----------------------------------------------------------------------------
@@ -337,7 +345,13 @@ _hex2int(char const * a, uint32_t len)
     NSLog(@"warning: no section info found for address 0x%.16qX",rva64);
     return nil;
   }
-  return (--iter)->second.second;
+  NSDictionary *sectionInfo = (--iter)->second.second;
+  unsigned long long sectionSize = [sectionInfo[@"size"] unsignedLongLongValue];
+  if (sectionSize && rva64 > (iter->first + sectionSize)) {
+    NSLog(@"warning: address 0x%.16qX out of bounds for section",rva64);
+    return nil;
+  }
+  return sectionInfo;
 }
 //-----------------------------------------------------------------------------
 - (NSString *)findSectionContainsRVA:(uint32_t)rva
