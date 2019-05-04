@@ -1805,6 +1805,16 @@ struct CompareSectionByName
                                   length:section_64->size
                                 pointers:objcClassPointers];
     }
+    
+    section_64 = [self findSection64ByName:"__objc_nlclslist" andSegment:"__DATA"];
+    if ((sectionNode = [self findNodeByUserInfo:[self userInfoForSection64:section_64]]))
+    {
+      [self createObjC2Pointer64ListNode:sectionNode
+                                 caption:(lastNodeCaption = @"ObjC2 Non-Lazy Class List")
+                                location:section_64->offset + imageOffset
+                                  length:section_64->size
+                                pointers:objcClassPointers];
+    }
 
     section_64 = [self findSection64ByName:"__class_refs" andSegment:"__OBJC2"];
     if (section_64 == NULL)
@@ -1838,6 +1848,16 @@ struct CompareSectionByName
       [self createObjC2Pointer64ListNode:sectionNode 
                                  caption:(lastNodeCaption = @"ObjC2 Category List")
                                 location:section_64->offset + imageOffset 
+                                  length:section_64->size
+                                pointers:objcCategoryPointers];
+    }
+    
+    section_64 = [self findSection64ByName:"__objc_nlcatlist" andSegment:"__DATA"];
+    if ((sectionNode = [self findNodeByUserInfo:[self userInfoForSection64:section_64]]))
+    {
+      [self createObjC2Pointer64ListNode:sectionNode
+                                 caption:(lastNodeCaption = @"ObjC2 Non-Lazy Category List")
+                                location:section_64->offset + imageOffset
                                   length:section_64->size
                                 pointers:objcCategoryPointers];
     }
