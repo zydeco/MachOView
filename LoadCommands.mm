@@ -304,6 +304,7 @@ using namespace std;
     case S_THREAD_LOCAL_VARIABLES:              [node.details appendRow:@"":@"":@"00000013":@"S_THREAD_LOCAL_VARIABLES"]; break;
     case S_THREAD_LOCAL_VARIABLE_POINTERS:      [node.details appendRow:@"":@"":@"00000014":@"S_THREAD_LOCAL_VARIABLE_POINTERS"]; break;
     case S_THREAD_LOCAL_INIT_FUNCTION_POINTERS: [node.details appendRow:@"":@"":@"00000015":@"S_THREAD_LOCAL_INIT_FUNCTION_POINTERS"]; break;
+    case S_INIT_FUNC_OFFSETS:                   [node.details appendRow:@"":@"":@"00000016":@"S_INIT_FUNC_OFFSETS"]; break;
   }
   
   if (section->flags & S_ATTR_PURE_INSTRUCTIONS)   [node.details appendRow:@"":@"":@"80000000":@"S_ATTR_PURE_INSTRUCTIONS"];
@@ -431,7 +432,8 @@ using namespace std;
   if (segment_command_64->flags & SG_FVMLIB)              [node.details appendRow:@"":@"":@"00000002":@"SG_FVMLIB"];
   if (segment_command_64->flags & SG_NORELOC)             [node.details appendRow:@"":@"":@"00000004":@"SG_NORELOC"];
   if (segment_command_64->flags & SG_PROTECTED_VERSION_1) [node.details appendRow:@"":@"":@"00000008":@"SG_PROTECTED_VERSION_1"];
-  
+  if (segment_command_64->flags & SG_READ_ONLY)           [node.details appendRow:@"":@"":@"00000010":@"SG_READ_ONLY"];
+
   return node;
 }
 
